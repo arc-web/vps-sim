@@ -66,3 +66,39 @@ def test_calculate_headroom_decay():
     assert isinstance(decay, (int, float))
 
     db.close()
+
+
+def test_break_even_calculation():
+    """Calculate break-even month for upgrade vs API savings."""
+    from analyze import BreakEvenCalculator
+
+    calc = BreakEvenCalculator(
+        api_calls_per_day=200,
+        avg_tokens_per_call=800,
+        local_model_handles_pct=0.40,
+        api_cost_per_1k_tokens=0.003,
+        current_vps_cost_usd=14.99,
+        upgrade_cost_usd=32.49
+    )
+
+    break_even_month = calc.compute_break_even()
+    assert break_even_month > 0
+    assert isinstance(break_even_month, int)
+
+
+def test_migration_plan():
+    """Generate migration recommendation."""
+    from analyze import MigrationPlanner
+
+    bottlenecks = {
+        "ram_gb": {"tier": "RED", "utilization_pct": 88},
+        "cpu_cores": {"tier": "YELLOW", "utilization_pct": 75},
+        "disk_gb": {"tier": "GREEN", "utilization_pct": 45}
+    }
+
+    planner = MigrationPlanner()
+    plan = planner.generate(bottlenecks)
+
+    assert "urgency" in plan
+    assert "action" in plan
+    assert plan["urgency"] in ["urgent", "recommended", "ok"]

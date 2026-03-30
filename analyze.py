@@ -130,3 +130,56 @@ class HeadroomDecayTracker:
             return max(0, round(days_to_threshold, 1))
         except:
             return None
+
+
+class BreakEvenCalculator:
+    """Calculate upgrade ROI via API cost savings."""
+
+    def __init__(self, api_calls_per_day: int, avg_tokens_per_call: int, local_model_handles_pct: float,
+                 api_cost_per_1k_tokens: float, current_vps_cost_usd: float, upgrade_cost_usd: float):
+        self.api_calls_per_day = api_calls_per_day
+        self.avg_tokens_per_call = avg_tokens_per_call
+        self.local_model_handles_pct = local_model_handles_pct
+        self.api_cost_per_1k_tokens = api_cost_per_1k_tokens
+        self.current_vps_cost_usd = current_vps_cost_usd
+        self.upgrade_cost_usd = upgrade_cost_usd
+
+    def compute_break_even(self) -> int:
+        """Return month where cumulative savings exceed upgrade cost."""
+        # Monthly API savings
+        api_calls_per_month = self.api_calls_per_day * 30
+        tokens_per_month = api_calls_per_month * self.avg_tokens_per_call
+        monthly_api_savings = (tokens_per_month / 1000) * self.api_cost_per_1k_tokens * self.local_model_handles_pct
+
+        upgrade_delta = self.upgrade_cost_usd - self.current_vps_cost_usd
+
+        if monthly_api_savings <= 0:
+            return None
+
+        months_to_break_even = upgrade_delta / monthly_api_savings
+        return max(1, int(months_to_break_even))
+
+
+class MigrationPlanner:
+    """Generate migration recommendation based on bottlenecks."""
+
+    def generate(self, bottlenecks: Dict) -> Dict:
+        """Create migration plan with urgency and action items."""
+        critical_count = sum(1 for b in bottlenecks.values() if b["tier"] == "CRITICAL")
+        red_count = sum(1 for b in bottlenecks.values() if b["tier"] == "RED")
+
+        if critical_count > 0:
+            urgency = "urgent"
+            action = "Upgrade immediately - critical resource exhaustion risk"
+        elif red_count > 1:
+            urgency = "recommended"
+            action = "Plan upgrade within 1-2 weeks"
+        else:
+            urgency = "ok"
+            action = "Monitor headroom; upgrade not immediately needed"
+
+        return {
+            "urgency": urgency,
+            "action": action,
+            "bottlenecks": bottlenecks
+        }
