@@ -1,5 +1,7 @@
 """Resource bottleneck analyzer for VPS simulations."""
 from typing import Dict
+from datetime import datetime
+from statistics import linear_regression
 
 
 class BottleneckAnalyzer:
@@ -71,3 +73,60 @@ class BottleneckAnalyzer:
 
         # If utilization >= 100% or above the highest threshold
         return "CRITICAL"
+
+
+class HeadroomDecayTracker:
+    """Track headroom decline and predict exhaustion."""
+
+    def __init__(self, baseline_db):
+        self.db = baseline_db
+
+    def estimate_days_to_full(self, resource: str = "ram", threshold_pct: float = 95.0) -> float:
+        """Estimate days until resource exhaustion.
+
+        Args:
+            resource: Resource type to analyze ("ram")
+            threshold_pct: Utilization percentage threshold (0-100)
+
+        Returns:
+            Days until threshold is reached, or None if insufficient data
+        """
+        baselines = self.db.get_baselines_since("2020-01-01T00:00:00Z")
+
+        if len(baselines) < 3:
+            return None  # Insufficient data
+
+        # Extract resource usage over time
+        x_data = []  # Days since first baseline
+        y_data = []  # Resource usage
+
+        first_ts = datetime.fromisoformat(baselines[0]["timestamp"].replace("Z", "+00:00"))
+
+        for baseline in baselines:
+            ts = datetime.fromisoformat(baseline["timestamp"].replace("Z", "+00:00"))
+            days_since = (ts - first_ts).days
+            x_data.append(days_since)
+
+            if resource == "ram":
+                y_data.append(baseline["data"]["ram"]["used_gb"])
+
+        if len(x_data) < 2:
+            return None
+
+        try:
+            # Linear regression: slope (GB/day)
+            slope, intercept = linear_regression(x_data, y_data)
+
+            # Total RAM (assume baseline is current hardware)
+            total_gb = baselines[-1]["data"]["ram"]["total_gb"]
+            current_used = baselines[-1]["data"]["ram"]["used_gb"]
+
+            # Days until threshold
+            threshold_gb = total_gb * (threshold_pct / 100)
+            if slope <= 0:
+                return None  # No growth
+
+            days_to_threshold = (threshold_gb - current_used) / slope
+            return max(0, round(days_to_threshold, 1))
+        except:
+            return None

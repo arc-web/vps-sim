@@ -1,5 +1,7 @@
 import pytest
 from analyze import BottleneckAnalyzer
+import tempfile
+from db import BaselineDB
 
 
 def test_identify_bottlenecks(mock_baseline_data):
@@ -26,3 +28,41 @@ def test_tier_assignment():
     # 95% = CRITICAL
     tier = analyzer._assign_tier(0.95)
     assert tier == "CRITICAL"
+
+
+def test_calculate_headroom_decay():
+    """Calculate headroom decline using linear regression."""
+    from analyze import HeadroomDecayTracker
+
+    # Create temporary database
+    with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as f:
+        temp_db_path = f.name
+
+    db = BaselineDB(temp_db_path)
+    db.create_tables()
+
+    # Insert 5 baselines with increasing RAM usage
+    for i in range(5):
+        baseline = {
+            "timestamp": f"2026-03-2{i}T12:00:00Z",
+            "ram": {
+                "used_gb": 3.0 + (i * 0.5),
+                "total_gb": 8.0
+            },
+            "cpu": {
+                "usr_pct": 30.0,
+                "cores": 2
+            },
+            "disk": {
+                "used_gb": 50.0
+            }
+        }
+        db.insert_baseline(baseline)
+
+    tracker = HeadroomDecayTracker(db)
+    decay = tracker.estimate_days_to_full()
+
+    assert decay > 0  # Should predict future exhaustion
+    assert isinstance(decay, (int, float))
+
+    db.close()
