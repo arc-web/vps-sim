@@ -1,0 +1,60 @@
+{
+  "hetzner": {
+    "cpx31": {
+      "vcpu": 4, "ram_gb": 8.0, "disk_gb": 160, "disk_type": "NVMe",
+      "cpu_model": "AMD EPYC", "geekbench_single_min": 750, "geekbench_single_max": 800,
+      "price_usd": 17.29, "price_usd_renewal": null,
+      "price_usd_post_date": 22.43, "price_change_date": "2026-04-01",
+      "bandwidth_tb": 3, "regions": ["EU", "US"], "cpu_steal_risk": "low", "billing": "hourly",
+      "overview": "4 vCPU AMD EPYC, 8 GB RAM, 160 GB NVMe. Best value in EU/US.",
+      "pros": ["Excellent single-core performance", "Low CPU steal", "NVMe standard"],
+      "cons": ["EU/US only", "No managed add-ons"],
+      "risks": ["April 1 price hike 30%"],
+      "opportunities": ["Lock pricing before April 1"],
+      "last_verified": "2026-03-30", "notes": ""
+    },
+    "cpx41": {
+      "vcpu": 8, "ram_gb": 16.0, "disk_gb": 240, "disk_type": "NVMe",
+      "cpu_model": "AMD EPYC", "geekbench_single_min": 750, "geekbench_single_max": 800,
+      "price_usd": 32.49, "price_usd_renewal": null,
+      "price_usd_post_date": 42.24, "price_change_date": "2026-04-01",
+      "bandwidth_tb": 4, "regions": ["EU", "US"], "cpu_steal_risk": "low", "billing": "hourly",
+      "overview": "8 vCPU AMD EPYC, 16 GB RAM, 240 GB NVMe. Recommended for heavy workloads.",
+      "pros": ["Excellent performance", "Headroom for 7B models", "Low steal"],
+      "cons": ["Price hike April 1"],
+      "risks": ["Post-April cost €42+/mo"],
+      "opportunities": ["Upgrade now to lock €29.99"],
+      "last_verified": "2026-03-30", "notes": ""
+    }
+  },
+  "hostinger": {
+    "kvm4": {
+      "vcpu": 4, "ram_gb": 16.0, "disk_gb": 200, "disk_type": "NVMe",
+      "cpu_model": "AMD EPYC", "geekbench_single_min": 700, "geekbench_single_max": 800,
+      "price_usd": 12.99, "price_usd_renewal": 28.99,
+      "price_usd_post_date": null, "price_change_date": null,
+      "bandwidth_tb": 16, "regions": ["EU", "US", "APAC"], "cpu_steal_risk": "low", "billing": "hourly",
+      "overview": "4 vCPU, 16 GB RAM, 200 GB NVMe. Intro pricing 24-month term only.",
+      "pros": ["16 GB RAM standard", "Global regions", "No announced price hike"],
+      "cons": ["Renewal jumps to $28.99/mo"],
+      "risks": ["Renewal cost 2.2x intro"],
+      "opportunities": ["Lock intro for 24mo"],
+      "last_verified": "2026-03-30", "notes": "Current provider"
+    }
+  },
+  "contabo": {
+    "vps30": {
+      "vcpu": 8, "ram_gb": 24.0, "disk_gb": 200, "disk_type": "NVMe",
+      "cpu_model": "Intel/AMD mixed", "geekbench_single_min": 400, "geekbench_single_max": 800,
+      "price_usd": 12.10, "price_usd_renewal": null,
+      "price_usd_post_date": null, "price_change_date": null,
+      "bandwidth_tb": 999, "regions": ["EU"], "cpu_steal_risk": "high", "billing": "monthly",
+      "overview": "8 vCPU, 24 GB RAM. Cheapest option but high CPU steal variance.",
+      "pros": ["Huge value on spec/price", "Unlimited bandwidth"],
+      "cons": ["40% CPU steal reported", "Noisy neighbor issues"],
+      "risks": ["Inconsistent performance under load"],
+      "opportunities": ["Budget option for non-critical workloads"],
+      "last_verified": "2026-03-30", "notes": ""
+    }
+  }
+}
