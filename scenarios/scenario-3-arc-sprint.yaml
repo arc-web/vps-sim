@@ -1,25 +1,29 @@
-name: "ARC Sprint (Parallel Workers)"
-duration_hours: 8
-description: "Max concurrency: multiple Claude Code instances solving tasks"
+name: arc-sprint
+description: "3-5 ao spawn workers in isolated worktrees. Each reads/writes code, runs CI. openclaw reviewing PRs. ZeroClaw security review. embedding-proxy hot. Signet concurrent. Local LLM resident."
+last_calibrated: "2026-03-30"
+stale_after_days: 30
 
-baseline_overlay:
-  ram_delta_mb: 1024
-  cpu_delta_pct: 20.0
-  disk_delta_mb: 1000
+concurrency:
+  ao_workers: 4
+  zeroclaw_active: true
+  researcher_agents: 1
 
-ao_workers:
-  count: 8
-  ram_per_worker_mb: 768
-  cpu_per_worker_pct: 25.0
-
-processes:
-  - name: "claude_workers"
-    count: 8
-    ram_mb: 1280
-    cpu_pct: 45.0
-  - name: "task_queue"
+add_processes:
+  - name: claude-worker
+    count: 4
+    ram_mb: 480
+    cpu_pct: 18
+    disk_io_mbps: 8
+    disk_storage_mb: 200
+  - name: ollama-qwen2.5-1.5b
     count: 1
-    ram_mb: 512
-    cpu_pct: 10.0
+    ram_mb: 1200
+    cpu_pct: 35
+    disk_io_mbps: 0
 
-disk_growth_mb: 2000
+add_load:
+  signet_connections: 6
+  n8n_webhooks_per_min: 12
+  embedding_proxy_requests_per_min: 8
+
+duration_minutes: 45

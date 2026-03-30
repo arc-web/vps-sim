@@ -1,25 +1,34 @@
-name: "Google Ads Pipeline"
-duration_hours: 4
-description: "Parallel API calls, report generation, inference"
+name: google-ads-pipeline
+description: "ads-orchestrator.py, google-ads-read across accounts, researcher sub-agent (Sonnet), n8n Supabase writes, ZeroClaw audit, Signet heavy writes, embedding-proxy vectors."
+last_calibrated: "2026-03-30"
+stale_after_days: 30
 
-baseline_overlay:
-  ram_delta_mb: 512
-  cpu_delta_pct: 10.0
-  disk_delta_mb: 200
+concurrency:
+  ao_workers: 0
+  zeroclaw_active: true
+  researcher_agents: 1
 
-ao_workers:
-  count: 4
-  ram_per_worker_mb: 512
-  cpu_per_worker_pct: 20.0
-
-processes:
-  - name: "ad_fetch_workers"
+add_processes:
+  - name: ads-orchestrator
+    count: 1
+    ram_mb: 350
+    cpu_pct: 15
+    disk_io_mbps: 2
+    disk_storage_mb: 100
+  - name: google-ads-read
     count: 4
     ram_mb: 256
-    cpu_pct: 18.0
-  - name: "report_generator"
-    count: 2
-    ram_mb: 1024
-    cpu_pct: 35.0
+    cpu_pct: 12
+    disk_io_mbps: 3
+  - name: sonnet-researcher
+    count: 1
+    ram_mb: 200
+    cpu_pct: 10
+    disk_io_mbps: 1
 
-disk_growth_mb: 500
+add_load:
+  signet_connections: 8
+  n8n_webhooks_per_min: 15
+  embedding_proxy_requests_per_min: 10
+
+duration_minutes: 240

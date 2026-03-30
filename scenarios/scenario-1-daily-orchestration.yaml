@@ -1,25 +1,24 @@
-name: "Daily Orchestration"
-duration_hours: 24
-description: "Baseline load: daily Claude Code runs, agent coordination, logging"
+name: daily-orchestration
+description: "openclaw handles Discord, calls Signet, spawns 1-2 Haiku sub-agents. ZeroClaw heartbeat. n8n webhooks. No ao spawn, no local LLM."
+last_calibrated: "2026-03-30"
+stale_after_days: 30
 
-baseline_overlay:
-  ram_delta_mb: 256
-  cpu_delta_pct: 5.0
-  disk_delta_mb: 50
+concurrency:
+  ao_workers: 0
+  zeroclaw_active: true
+  researcher_agents: 1
 
-ao_workers:
-  count: 2
-  ram_per_worker_mb: 384
-  cpu_per_worker_pct: 12.0
+add_processes:
+  - name: haiku-subagent
+    count: 2
+    ram_mb: 120
+    cpu_pct: 5
+    disk_io_mbps: 1
+    disk_storage_mb: 50
 
-processes:
-  - name: "concurrent_agents"
-    count: 3
-    ram_mb: 512
-    cpu_pct: 15.0
-  - name: "embedding_inference"
-    count: 1
-    ram_mb: 768
-    cpu_pct: 25.0
+add_load:
+  signet_connections: 2
+  n8n_webhooks_per_min: 3
+  embedding_proxy_requests_per_min: 2
 
-disk_growth_mb: 100
+duration_minutes: 1440
