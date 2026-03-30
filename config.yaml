@@ -1,0 +1,20 @@
+vps:
+  ssh_host: "187.77.222.191"
+  ssh_user: "root"
+  ssh_key: "~/.ssh/id_ed25519_hostinger"
+  ssh_timeout_seconds: 10
+
+costs:
+  current_vps_usd: 14.99
+  api_calls_per_day: 200
+  avg_tokens_per_call: 800
+  local_model_handles_pct: 0.40
+  api_cost_per_1k_tokens:
+    haiku: 0.00025
+    sonnet: 0.003
+    opus: 0.015
+  default_model_mix: "haiku"
+
+reports:
+  output_dir: "/data/.agents/reports"
+  caddy_base_url: "https://reports.advertisingreportcard.com"
