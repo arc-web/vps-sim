@@ -130,9 +130,9 @@ class MetricsCollector:
         except:
             return {"count": 0, "total_ram_mb": 0, "avg_cpu_pct": 0.0}
 
-    def _collect_ollama(self) -> Dict:
+    def _collect_ollama(self) -> list:
         """Get loaded Ollama models."""
-        return {"loaded_models": []}
+        return []
 
     def close(self):
         """Close SSH connection if open."""

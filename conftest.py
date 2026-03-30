@@ -26,6 +26,6 @@ def mock_baseline_data():
         ],
         "system_services": {"embedding_proxy_mb": 180, "caddy_mb": 45, "signet_mb": 120, "measured_overhead_mb": 512},
         "ao_workers": {"count": 0, "total_ram_mb": 0, "avg_cpu_pct": 0},
-        "ollama": {"loaded_models": []},
+        "ollama": [],
         "tag": None
     }
