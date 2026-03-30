@@ -1,0 +1,25 @@
+name: "ARC Sprint (Parallel Workers)"
+duration_hours: 8
+description: "Max concurrency: multiple Claude Code instances solving tasks"
+
+baseline_overlay:
+  ram_delta_mb: 1024
+  cpu_delta_pct: 20.0
+  disk_delta_mb: 1000
+
+ao_workers:
+  count: 8
+  ram_per_worker_mb: 768
+  cpu_per_worker_pct: 25.0
+
+processes:
+  - name: "claude_workers"
+    count: 8
+    ram_mb: 1280
+    cpu_pct: 45.0
+  - name: "task_queue"
+    count: 1
+    ram_mb: 512
+    cpu_pct: 10.0
+
+disk_growth_mb: 2000

@@ -1,0 +1,25 @@
+name: "Google Ads Pipeline"
+duration_hours: 4
+description: "Parallel API calls, report generation, inference"
+
+baseline_overlay:
+  ram_delta_mb: 512
+  cpu_delta_pct: 10.0
+  disk_delta_mb: 200
+
+ao_workers:
+  count: 4
+  ram_per_worker_mb: 512
+  cpu_per_worker_pct: 20.0
+
+processes:
+  - name: "ad_fetch_workers"
+    count: 4
+    ram_mb: 256
+    cpu_pct: 18.0
+  - name: "report_generator"
+    count: 2
+    ram_mb: 1024
+    cpu_pct: 35.0
+
+disk_growth_mb: 500

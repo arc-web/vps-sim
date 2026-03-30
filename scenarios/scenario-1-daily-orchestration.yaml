@@ -1,0 +1,25 @@
+name: "Daily Orchestration"
+duration_hours: 24
+description: "Baseline load: daily Claude Code runs, agent coordination, logging"
+
+baseline_overlay:
+  ram_delta_mb: 256
+  cpu_delta_pct: 5.0
+  disk_delta_mb: 50
+
+ao_workers:
+  count: 2
+  ram_per_worker_mb: 384
+  cpu_per_worker_pct: 12.0
+
+processes:
+  - name: "concurrent_agents"
+    count: 3
+    ram_mb: 512
+    cpu_pct: 15.0
+  - name: "embedding_inference"
+    count: 1
+    ram_mb: 768
+    cpu_pct: 25.0
+
+disk_growth_mb: 100
