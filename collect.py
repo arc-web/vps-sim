@@ -1,7 +1,7 @@
 import json
 import subprocess
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Optional
 try:
     import paramiko
@@ -26,7 +26,7 @@ class MetricsCollector:
     def collect(self, tag: Optional[str] = None) -> Dict:
         """Collect all metrics and return as structured dict."""
         return {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             "ram": self._collect_ram(),
             "cpu": self._collect_cpu(),
             "disk": self._collect_disk(),

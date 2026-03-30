@@ -14,13 +14,11 @@ def test_price_resolution_post_date():
     """Price jumps after price_change_date."""
     db = HardwareDB("providers.json")
     plan = db.providers["hetzner"]["cpx41"]
-    # Mock today as 2026-04-05
-    import datetime
-    from unittest.mock import patch
-    with patch('hardware_db.datetime') as mock_dt:
-        mock_dt.datetime.now().date.return_value = datetime.date(2026, 4, 5)
-        price = db.get_price("hetzner", "cpx41")
-        assert price == plan["price_usd_post_date"]
+    # Test price resolution by passing date directly
+    price_before = db.get_price("hetzner", "cpx41", today="2026-03-31")
+    price_after = db.get_price("hetzner", "cpx41", today="2026-04-05")
+    assert price_before == plan["price_usd"]
+    assert price_after == plan["price_usd_post_date"]
 
 def test_match_plans_filters_correctly():
     """Match plans to scenario requirements."""
