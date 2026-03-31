@@ -1,104 +1,85 @@
 import pytest
-from analyze import BottleneckAnalyzer
-import tempfile
-from db import BaselineDB
+from analyze import BottleneckAnalyzer, HeadroomDecayTracker, BreakEvenCalculator, MigrationPlanner
 
-
-def test_identify_bottlenecks(mock_baseline_data):
-    """Identify resource bottlenecks by tier."""
+def test_bottleneck_tiers_per_provider():
     analyzer = BottleneckAnalyzer()
+    requirements = {"ram_gb": 12.0, "cpu_cores": 6, "disk_gb": 80, "disk_io_mbps": 40}
+    plan_8core = {"ram_gb": 16, "vcpu": 8, "disk_gb": 240, "disk_io_max_mbps": 100}
+    result = analyzer.identify(requirements, plan_8core)
+    assert result["cpu"]["tier"] == "YELLOW"
+    plan_4core = {"ram_gb": 16, "vcpu": 4, "disk_gb": 240, "disk_io_max_mbps": 100}
+    result = analyzer.identify(requirements, plan_4core)
+    assert result["cpu"]["tier"] == "CRITICAL"
 
-    # Simulate high RAM usage
-    scenario_reqs = {"ram_gb": 7.0, "cpu_cores": 2, "disk_gb": 90}
-    hardware = {"ram_gb": 7.8, "cpu_cores": 2, "disk_gb": 96}
-
-    bottlenecks = analyzer.identify(scenario_reqs, hardware)
-    assert "ram_gb" in bottlenecks
-    assert bottlenecks["ram_gb"]["tier"] in ["GREEN", "YELLOW", "RED", "CRITICAL"]
-
-
-def test_tier_assignment():
-    """Verify tier thresholds."""
+def test_bottleneck_spec_thresholds():
     analyzer = BottleneckAnalyzer()
+    assert analyzer._assign_tier("ram", 65) == "GREEN"
+    assert analyzer._assign_tier("ram", 75) == "YELLOW"
+    assert analyzer._assign_tier("ram", 90) == "RED"
+    assert analyzer._assign_tier("ram", 96) == "CRITICAL"
+    assert analyzer._assign_tier("cpu", 55) == "GREEN"
+    assert analyzer._assign_tier("cpu", 65) == "YELLOW"
+    assert analyzer._assign_tier("cpu", 80) == "RED"
+    assert analyzer._assign_tier("cpu", 95) == "CRITICAL"
 
-    # 90% = RED (85-95)
-    tier = analyzer._assign_tier(0.90)
-    assert tier == "RED"
+def test_bottleneck_output_has_verdict():
+    analyzer = BottleneckAnalyzer()
+    requirements = {"ram_gb": 7.5, "cpu_cores": 2, "disk_gb": 90, "disk_io_mbps": 10}
+    plan = {"ram_gb": 8, "vcpu": 2, "disk_gb": 96, "disk_io_max_mbps": 100}
+    result = analyzer.identify(requirements, plan)
+    assert "primary_bottleneck" in result
+    assert "verdict" in result
 
-    # 95% = CRITICAL
-    tier = analyzer._assign_tier(0.95)
-    assert tier == "CRITICAL"
-
-
-def test_calculate_headroom_decay():
-    """Calculate headroom decline using linear regression."""
-    from analyze import HeadroomDecayTracker
-
-    # Create temporary database
-    with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as f:
-        temp_db_path = f.name
-
+def test_decay_returns_per_resource_dict(temp_db_path, mock_baseline_data):
+    from db import BaselineDB
     db = BaselineDB(temp_db_path)
     db.create_tables()
-
-    # Insert 5 baselines with increasing RAM usage
     for i in range(5):
-        baseline = {
-            "timestamp": f"2026-03-2{i}T12:00:00Z",
-            "ram": {
-                "used_gb": 3.0 + (i * 0.5),
-                "total_gb": 8.0
-            },
-            "cpu": {
-                "usr_pct": 30.0,
-                "cores": 2
-            },
-            "disk": {
-                "used_gb": 50.0
-            }
-        }
-        db.insert_baseline(baseline)
-
+        b = {**mock_baseline_data, "timestamp": f"2026-03-2{i+1}T12:00:00Z"}
+        b["ram"] = {**mock_baseline_data["ram"], "used_gb": 4.0 + (i * 0.3)}
+        b["disk"] = {**mock_baseline_data["disk"], "used_gb": 71.0 + (i * 0.2)}
+        db.insert_baseline(b)
     tracker = HeadroomDecayTracker(db)
-    decay = tracker.estimate_days_to_full()
+    result = tracker.analyze()
+    assert "ram" in result
+    assert "disk" in result
+    assert "days_to_yellow" in result["ram"]
+    assert "days_to_red" in result["ram"]
+    assert "days_to_critical" in result["ram"]
+    assert "confidence" in result["ram"]
+    assert result["ram"]["confidence"] == "low"
 
-    assert decay > 0  # Should predict future exhaustion
-    assert isinstance(decay, (int, float))
+def test_decay_insufficient_data(temp_db_path, mock_baseline_data):
+    from db import BaselineDB
+    db = BaselineDB(temp_db_path)
+    db.create_tables()
+    db.insert_baseline(mock_baseline_data)
+    tracker = HeadroomDecayTracker(db)
+    result = tracker.analyze()
+    assert result["ram"]["confidence"] == "none"
+    assert result["ram"]["skipped"] is True
 
-    db.close()
-
-
-def test_break_even_calculation():
-    """Calculate break-even month for upgrade vs API savings."""
-    from analyze import BreakEvenCalculator
-
+def test_break_even_with_monthly_breakdown():
     calc = BreakEvenCalculator(
-        api_calls_per_day=200,
-        avg_tokens_per_call=800,
-        local_model_handles_pct=0.40,
-        api_cost_per_1k_tokens=0.003,
-        current_vps_cost_usd=14.99,
-        upgrade_cost_usd=32.49
+        current_vps_usd=14.99, target_vps_usd=32.49,
+        api_calls_per_day=200, avg_tokens_per_call=800,
+        local_model_handles_pct=0.40, api_cost_per_1k_tokens=0.003,
     )
+    result = calc.compute()
+    assert "break_even_months" in result
+    assert "monthly_api_savings_usd" in result
+    assert "cumulative_savings_by_month" in result
+    assert "recommendation" in result
+    csm = result["cumulative_savings_by_month"]
+    assert "1" in csm and "3" in csm and "6" in csm and "12" in csm
+    assert csm["1"] < 0
 
-    break_even_month = calc.compute_break_even()
-    assert break_even_month > 0
-    assert isinstance(break_even_month, int)
-
-
-def test_migration_plan():
-    """Generate migration recommendation."""
-    from analyze import MigrationPlanner
-
-    bottlenecks = {
-        "ram_gb": {"tier": "RED", "utilization_pct": 88},
-        "cpu_cores": {"tier": "YELLOW", "utilization_pct": 75},
-        "disk_gb": {"tier": "GREEN", "utilization_pct": 45}
-    }
-
+def test_migration_plan_has_steps():
     planner = MigrationPlanner()
-    plan = planner.generate(bottlenecks)
-
-    assert "urgency" in plan
-    assert "action" in plan
-    assert plan["urgency"] in ["urgent", "recommended", "ok"]
+    plan = planner.generate(target_provider="hetzner", target_plan="cpx41")
+    assert "target" in plan
+    assert "steps" in plan
+    assert len(plan["steps"]) >= 5
+    assert "rollback" in plan
+    assert "estimated_downtime_minutes" in plan
+    assert "urgency_note" in plan
